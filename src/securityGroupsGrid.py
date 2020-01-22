@@ -18,16 +18,18 @@ class SecurityGroupsGrid(selectableGrid.SelectableGrid):
         self.refresh()
         self.column_width = 20
         self.col_titles = ["SECURITY GROUPS ID", "SECURITY GROUPS NAME"]
-        groups = main.GATEWAY.ReadSecurityGroups()["SecurityGroups"]
-        values = list()
-        for g in groups:
-            values.append([g["SecurityGroupId"], g["SecurityGroupName"]])
-        self.values = values
 
         def on_selection(line):
             popup.editSecurityGroup(self.form, line)
 
         self.on_selection = on_selection
+
+    def refresh(self):
+        groups = main.GATEWAY.ReadSecurityGroups()["SecurityGroups"]
+        values = list()
+        for g in groups:
+            values.append([g["SecurityGroupId"], g["SecurityGroupName"]])
+        self.values = values
 
 
 class SecurityGroupsGridForOneInstance(selectableGrid.SelectableGrid):
@@ -46,3 +48,16 @@ class SecurityGroupsGridForOneInstance(selectableGrid.SelectableGrid):
             popup.manageSecurityGroup(self.form, line)
 
         self.on_selection = on_selection
+
+    def refresh(self):
+        id = main.VM["VmId"]
+        data = main.GATEWAY.ReadVms()["Vms"]
+        main.VMs = dict()
+        for vm in data:
+            main.VMs.update({vm["VmId"]: vm})
+        main.VM = main.VMs[id]
+        groups = main.VM["SecurityGroups"]
+        values = list()
+        for g in groups:
+            values.append([g["SecurityGroupId"], g["SecurityGroupName"]])
+        self.values = values

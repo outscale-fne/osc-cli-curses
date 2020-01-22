@@ -1,10 +1,10 @@
 import curses
 import textwrap
 
+import npyscreen
 import npyscreen.fmPopup
 import npyscreen.wgmultiline
 import pyperclip
-import npyscreen
 
 import main
 import mainForm
@@ -195,14 +195,22 @@ def editSecurityGroup(form, sg, form_color='STANDOUT'):
     def edit_cb():
         exit()
         mainForm.MODE = 'SECURITY-RULES'
-        form.reload()
 
     delete = F.add_widget(
         npyscreen.ButtonPress,
         name="DELETE",
     )
+    def delete_cb():
+        try:
+            val = main.GATEWAY.DeleteSecurityGroup(SecurityGroupId = id)
+        except:
+            raise
+        exit()
     edit.whenPressed = edit_cb
+    delete.whenPressed = delete_cb
     F.edit()
+    form.current_grid.refresh()
+    form.current_grid.display()
 
 
 def manageSecurityGroup(form, sg, form_color='STANDOUT'):
@@ -213,7 +221,6 @@ def manageSecurityGroup(form, sg, form_color='STANDOUT'):
     F.preserve_selected_widget = True
 
     def exit():
-        form.current_grid.refresh()
         F.editing = False
 
     F.on_ok = exit
@@ -225,14 +232,24 @@ def manageSecurityGroup(form, sg, form_color='STANDOUT'):
     def edit_cb():
         exit()
         mainForm.MODE = 'SECURITY-RULES'
-        form.reload()
 
-    delete = F.add_widget(
+    remove = F.add_widget(
         npyscreen.ButtonPress,
-        name="REMOVE",
+        name="REMOVE FROM INSTANCE",
     )
+    def remove_cb():
+        groups = main.VM["SecurityGroups"]
+        values = list()
+        for g in groups:
+            if id != g["SecurityGroupId"]:
+                values.append(g["SecurityGroupId"])
+        main.GATEWAY.UpdateVm(VmId = main.VM["VmId"], SecurityGroupIds = values)
+        exit()
     edit.whenPressed = edit_cb
+    remove.whenPressed = remove_cb
     F.edit()
+    form.current_grid.refresh()
+    form.current_grid.display()
 
 
 def editSecurityGroupRule(form, rule, form_color='STANDOUT'):
@@ -280,7 +297,7 @@ def editSecurityGroupRule(form, rule, form_color='STANDOUT'):
 
 def newSecurityGroupRule(form, form_color='STANDOUT'):
     npyscreen.ActionPopup.DEFAULT_LINES = 15
-    F = ConfirmCancelPopup(name='', color=form_color)
+    F = ConfirmCancelPopup(name='New Security Rule', color=form_color)
 
     F.preserve_selected_widget = True
     F.add_widget(npyscreen.Textfield, value="From PORT:", editable=False)
@@ -312,8 +329,28 @@ def newSecurityGroupRule(form, form_color='STANDOUT'):
         except:
             raise
         F.editing = False
-        form.current_grid.refresh()
         npyscreen.ActionPopup.DEFAULT_LINES = 12
+
+    F.on_ok = exit
+    F.edit()
+    form.current_grid.refresh()
+    form.current_grid.display()
+
+def newSecurityGroup(form, form_color='STANDOUT'):
+    F = ConfirmCancelPopup(name='New Security Group', color=form_color)
+
+    F.preserve_selected_widget = True
+    F.add_widget(npyscreen.Textfield, value="Name", editable=False)
+    name = F.add_widget(npyscreen.Textfield, value="NewName", editable=True)
+    def exit():
+        try:
+            main.GATEWAY.CreateSecurityGroup(
+                        Description = 'desc',
+                        SecurityGroupName = name.value
+                    )
+        except:
+            raise
+        F.editing = False
 
     F.on_ok = exit
     F.edit()
