@@ -8,9 +8,9 @@ import npyscreen
 import requests
 from osc_sdk_python import Gateway
 
-import popup
 import main
-from mainForm import MainForm
+import mainForm
+import popup
 
 home = str(Path.home())
 
@@ -35,7 +35,9 @@ class CallbackFactory:
             main.GATEWAY = Gateway(**{"profile": self.name})
             res = main.GATEWAY.ReadClientGateways()
             if not "Errors" in res:
-                self.form.parentApp.addForm("Cockpit", MainForm, name="osc-cli-curses")
+                mainForm.MODE = 'INSTANCES'
+                self.form.parentApp.addForm(
+                    "Cockpit", mainForm.MainForm, name="osc-cli-curses")
                 self.form.parentApp.switchForm("Cockpit")
             else:
                 should_destroy_profile = npyscreen.notify_yes_no(
@@ -47,7 +49,8 @@ class CallbackFactory:
                     del OAPI_CREDENTIALS[self.name]
                     save_credentials(self.form)
         except requests.ConnectionError:
-            npyscreen.notify_confirm("Please check your internet connection.", "ERROR")
+            npyscreen.notify_confirm(
+                "Please check your internet connection.", "ERROR")
 
 
 class ProfileSelector(npyscreen.ActionFormV2):
@@ -83,7 +86,6 @@ class ProfileSelector(npyscreen.ActionFormV2):
             if ok and aksk:
                 OAPI_CREDENTIALS.update(aksk)
                 save_credentials(self)
-
 
         bt = self.add_widget(npyscreen.ButtonPress, name="NEW PROFILE")
         bt.whenPressed = new
