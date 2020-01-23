@@ -1,6 +1,4 @@
 import curses
-import threading
-import time
 
 import npyscreen
 import pyperclip
@@ -43,6 +41,10 @@ class mainMenu(npyscreen.MultiLineAction):
                 elif MODE == 'SECURITY':
                     if act_on_this == "CREATE NEW":
                         popup.newSecurityGroup(self.vmform)
+                        return
+                elif MODE == 'SECURITY-VM':
+                    if act_on_this == "ADD SEC-GROUP":
+                        popup.addSecurityGroupToVm(self.vmform)
                         return
                 elif MODE == 'SECURITY-RULES':
                     if act_on_this == "CREATE NEW":
@@ -108,7 +110,8 @@ class MainForm(npyscreen.FormBaseNew):
                 out = out + '─'
             return out
         menu_desc = (
-            "INSTANCES SECURITY VOLUMES SNAPSHOT REFRESH EXIT " + build_line(15)).split()
+            "INSTANCES SECURITY VOLUMES SNAPSHOT REFRESH EXIT " +
+            build_line(15)).split()
         global CURRENT_GRID_CLASS
         y, _ = self.useable_space()
         self.rowOffset = 16
@@ -126,12 +129,13 @@ class MainForm(npyscreen.FormBaseNew):
             menu_desc.append('ADD SSH MY IP')
         elif MODE == 'VOLUMES':
             CURRENT_GRID_CLASS = volumesGrid.VolumeGrid
+        elif MODE == 'VOLUMES-VM':
+            CURRENT_GRID_CLASS = volumesGrid.VolumeGridForOneInstance
         self.add_widget(
             mainMenu,
             vmform=self,
             relx=1,
             max_width=14,
-            max_height=10,
             values=menu_desc,
         )
 
@@ -144,7 +148,6 @@ class MainForm(npyscreen.FormBaseNew):
             value=0,
             additional_y_offset=2,
             additional_x_offset=2,
-            max_height=int(y / 2 - 2),
             column_width=21,
             select_whole_line=True,
             scroll_exit=True,

@@ -1,13 +1,10 @@
-import curses
-import textwrap
 
+import main
+import mainForm
 import npyscreen
 import npyscreen.fmPopup
 import npyscreen.wgmultiline
 import pyperclip
-
-import main
-import mainForm
 import securityGroupsGrid
 import securityRulesGrid
 
@@ -107,6 +104,10 @@ def editInstance(form, instance, form_color='STANDOUT'):
         npyscreen.ButtonPress,
         name="SECURITY",
     )
+    volumes = F.add_widget(
+        npyscreen.ButtonPress,
+        name="VOLUMES",
+    )
     # Now managing actions and wich buttons to hide or not.
     force_stop.hidden = (True if status == "stopped"
                          or status == "terminated" else False)
@@ -165,6 +166,12 @@ def editInstance(form, instance, form_color='STANDOUT'):
         pyperclip.copy(instance[5])
         exit()
 
+    def volumes_cb():
+        main.VM = main.VMs[id]
+        mainForm.MODE = 'VOLUMES-VM'
+        exit()
+        form.reload()
+
     copy_ip.whenPressed = copy_ip
     run_stop.whenPressed = start_vm if status == "stopped" else stop_vm
     force_stop.whenPressed = force_stop_vm
@@ -172,6 +179,7 @@ def editInstance(form, instance, form_color='STANDOUT'):
     security.whenPressed = sg
     terminate.whenPressed = terminate_vm
     copy_ip.whenPressed = _copy_ip
+    volumes.whenPressed = volumes_cb
     F.edit()
 
 
@@ -201,10 +209,11 @@ def editSecurityGroup(form, sg, form_color='STANDOUT'):
         npyscreen.ButtonPress,
         name="DELETE",
     )
+
     def delete_cb():
         try:
-            val = main.GATEWAY.DeleteSecurityGroup(SecurityGroupId = id)
-        except:
+            val = main.GATEWAY.DeleteSecurityGroup(SecurityGroupId=id)
+        except BaseException:
             raise
         exit()
     edit.whenPressed = edit_cb
@@ -239,13 +248,14 @@ def manageSecurityGroup(form, sg, form_color='STANDOUT'):
         npyscreen.ButtonPress,
         name="REMOVE FROM INSTANCE",
     )
+
     def remove_cb():
         groups = main.VM["SecurityGroups"]
         values = list()
         for g in groups:
             if id != g["SecurityGroupId"]:
                 values.append(g["SecurityGroupId"])
-        main.GATEWAY.UpdateVm(VmId = main.VM["VmId"], SecurityGroupIds = values)
+        main.GATEWAY.UpdateVm(VmId=main.VM["VmId"], SecurityGroupIds=values)
         exit()
     edit.whenPressed = edit_cb
     remove.whenPressed = remove_cb
@@ -271,6 +281,7 @@ def editSecurityGroupRule(form, rule, form_color='STANDOUT'):
 
     F.on_ok = exit
     btn_delete = F.add_widget(npyscreen.ButtonPress, name="DELETE")
+
     def delete():
         if from_port and to_port:
             main.GATEWAY.DeleteSecurityGroupRule(
@@ -297,6 +308,7 @@ def editSecurityGroupRule(form, rule, form_color='STANDOUT'):
     form.current_grid.refresh()
     form.current_grid.display()
 
+
 def newSecurityGroupRule(form, form_color='STANDOUT'):
     npyscreen.ActionPopup.DEFAULT_LINES = 15
     F = ConfirmCancelPopup(name='New Security Rule', color=form_color)
@@ -309,7 +321,7 @@ def newSecurityGroupRule(form, form_color='STANDOUT'):
     protocole = F.add(
         npyscreen.TitleSelectOne,
         max_height=4,
-        value=[0,],
+        value=[0, ],
         name="Protocol",
         values=["tcp", "udp", "icmp", "all"],
         scroll_exit=True,
@@ -318,17 +330,19 @@ def newSecurityGroupRule(form, form_color='STANDOUT'):
     ip = F.add_widget(
         npyscreen.Textfield, value=main.IP + "/32", editable=True
     )
+
     def exit():
         try:
             main.GATEWAY.CreateSecurityGroupRule(
-                        FromPortRange=int(from_port.value),
-                        IpProtocol='-1' if protocole.get_selected_objects()[0] == 'all' else protocole.get_selected_objects()[0],
-                        IpRange=ip.value,
-                        ToPortRange=int(to_port.value),
-                        SecurityGroupId=main.SECURITY_GROUP,
-                        Flow = 'Inbound'
-                    )
-        except:
+                FromPortRange=int(from_port.value),
+                IpProtocol='-1' if protocole.get_selected_objects(
+                )[0] == 'all' else protocole.get_selected_objects()[0],
+                IpRange=ip.value,
+                ToPortRange=int(to_port.value),
+                SecurityGroupId=main.SECURITY_GROUP,
+                Flow='Inbound'
+            )
+        except BaseException:
             raise
         F.editing = False
         npyscreen.ActionPopup.DEFAULT_LINES = 12
@@ -338,19 +352,21 @@ def newSecurityGroupRule(form, form_color='STANDOUT'):
     form.current_grid.refresh()
     form.current_grid.display()
 
+
 def newSecurityGroup(form, form_color='STANDOUT'):
     F = ConfirmCancelPopup(name='New Security Group', color=form_color)
 
     F.preserve_selected_widget = True
     F.add_widget(npyscreen.Textfield, value="Name", editable=False)
     name = F.add_widget(npyscreen.Textfield, value="NewName", editable=True)
+
     def exit():
         try:
             main.GATEWAY.CreateSecurityGroup(
-                        Description = 'desc',
-                        SecurityGroupName = name.value
-                    )
-        except:
+                Description='desc',
+                SecurityGroupName=name.value
+            )
+        except BaseException:
             raise
         F.editing = False
 
